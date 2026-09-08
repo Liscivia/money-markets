@@ -74,7 +74,8 @@ export class CollectorJobs {
     const previous = this.cache.get<JobState>(key)?.value;
     // Failed jobs retry after one minute; successful jobs use their configured cadence.
     const delay = previous?.status === 'error' ? Math.min(interval, retryInterval) : interval;
-    if (previous && this.now() - previous.attemptedAt < delay) return Promise.resolve();
+    if (previous && previous.status !== 'running' && this.now() - previous.attemptedAt < delay)
+      return Promise.resolve();
     const state: JobState = {
       status: 'running',
       attemptedAt: this.now(),

@@ -143,6 +143,23 @@ test('Slow jobs coalesce, other jobs proceed, durable due times survive restart,
   assert.equal(calls, 2);
 });
 
+test('An interrupted daily job resumes after restart instead of waiting a full day', async () => {
+  const cache = new MemoryCache();
+  cache.set('collector:job:capital', {
+    status: 'running',
+    attemptedAt: now - 1000,
+    finishedAt: null,
+    lastSuccessAt: null,
+  });
+  let calls = 0;
+  const jobs = new CollectorJobs(cache, () => now);
+  await jobs.run('capital', 86400_000, async () => {
+    calls++;
+  });
+  assert.equal(calls, 1);
+  assert.equal(jobs.states().capital!.status, 'ok');
+});
+
 async function withServer(app: express.Express, work: (origin: string) => Promise<void>) {
   const server = app.listen(0, '127.0.0.1');
   await once(server, 'listening');

@@ -6,7 +6,21 @@ import {
   fetchCompetition,
   useScheduledCompetition,
   refreshScheduledCompetition,
+  compactProtocol,
 } from '../server/competition.js';
+
+test('Only capital series are retained, not large unused token ledgers', () => {
+  const input = {
+    name: 'Fixture',
+    tvl: [{ date: 1, totalLiquidityUSD: 10 }],
+    tokens: [{ enormousUnusedLedger: true }],
+    chainTvls: { Ethereum: { tvl: [{ date: 1, totalLiquidityUSD: 10 }], tokensInUsd: ['unused'] } },
+  };
+  const result = compactProtocol(input);
+  assert.deepEqual(Object.keys(result), ['name', 'tvl', 'chainTvls']);
+  assert.deepEqual(Object.keys(result.chainTvls.Ethereum), ['tvl']);
+  assert.deepEqual(result.tvl, input.tvl);
+});
 
 test('Collector capital survives restart, shares its generation with history and retains timestamps on partial failures', async () => {
   const originalFetch = globalThis.fetch;

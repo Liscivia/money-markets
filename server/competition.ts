@@ -28,6 +28,18 @@ export interface LiquidityBenchmarks {
 }
 const slugs = ['aave-v3', 'aave-v4', 'morpho-blue'] as const;
 type RawResult = { at: number; rows: (RawProtocol | null)[]; warnings: string[] };
+/** DefiLlama also returns large token-level ledgers which this app never uses. */
+export function compactProtocol(data: RawProtocol): RawProtocol {
+  if (!Array.isArray(data.tvl) || !data.chainTvls || typeof data.chainTvls !== 'object')
+    throw new Error('Protocol capital history is unavailable');
+  return {
+    name: data.name,
+    tvl: data.tvl,
+    chainTvls: Object.fromEntries(
+      Object.entries(data.chainTvls).map(([chain, value]) => [chain, { tvl: value.tvl }]),
+    ),
+  };
+}
 let cachedRaw: RawResult | null = null;
 let flight: Promise<RawResult> | null = null;
 const RAW_KEY = 'defillama:raw-capital-v2';
@@ -56,17 +68,20 @@ async function rawData(force = false): Promise<RawResult> {
   if (!force && cachedRaw && Date.now() - cachedRaw.at < 3600_000) return cachedRaw;
   if (flight) return flight;
   flight = (async () => {
-    const results = await Promise.allSettled(
-      slugs.map(async (slug) => {
+    // Parse one large upstream response at a time, then retain only capital series.
+    // Parallel full-protocol JSON responses cause avoidable daily memory spikes.
+    const results: PromiseSettledResult<RawProtocol>[] = [];
+    for (const slug of slugs) {
+      try {
         const r = await fetch(`https://api.llama.fi/protocol/${slug}`, {
           signal: AbortSignal.timeout(25_000),
         });
         if (!r.ok) throw new Error(`${slug}: HTTP ${r.status}`);
-        const data = (await r.json()) as RawProtocol;
-        if (!Array.isArray(data.tvl)) throw new Error(`${slug}: history unavailable`);
-        return data;
-      }),
-    );
+        results.push({ status: 'fulfilled', value: compactProtocol((await r.json()) as RawProtocol) });
+      } catch (reason) {
+        results.push({ status: 'rejected', reason });
+      }
+    }
     const warnings = results.flatMap((r, i) =>
       r.status === 'rejected' ? [`${slugs[i]}: source unavailable`] : [],
     );
