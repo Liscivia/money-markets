@@ -1,0 +1,40 @@
+{
+  "name": "money-markets",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Aave and Morpho lending intelligence: rates, protocol competition, loops and carry.",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "dev": "tsx server/index.ts",
+    "build": "vite build && tsc --noEmit",
+    "start": "tsx server/index.ts --production",
+    "test": "tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "check:overview": "tsx scripts/check-overview.ts",
+    "test:smoke": "tsx scripts/smoke.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "fast-xml-parser": "^5.2.5",
+    "lucide-react": "^0.468.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "recharts": "^3.1.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.17.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "prettier": "3.9.6",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vite": "^6.3.5"
+  }
+}
