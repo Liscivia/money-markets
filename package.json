@@ -11,6 +11,7 @@
     "dev": "tsx server/index.ts",
     "build": "vite build && tsc --noEmit",
     "start": "tsx server/index.ts --production",
+    "collector": "tsx server/collector-main.ts",
     "test": "tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit",
     "check:overview": "tsx scripts/check-overview.ts",

@@ -11,7 +11,14 @@ function linkedSnapshot(snapshot: Snapshot): Snapshot {
   return { ...snapshot, markets: snapshot.markets.map((m) => ({ ...m, sourceUrl: marketUrl(m) ?? '' })) };
 }
 
-export function createApp(service: DataService, access: AccessPolicy) {
+export function createApp(
+  service: DataService,
+  access: AccessPolicy,
+  runtime?: {
+    storage: 'sqlite' | 'ephemeral';
+    health?: () => Record<string, unknown>;
+  },
+) {
   const app = express();
   app.disable('x-powered-by');
   app.disable('etag');
@@ -22,7 +29,8 @@ export function createApp(service: DataService, access: AccessPolicy) {
       ok: true,
       service: 'money-markets',
       sourceObservationsVersion: 2,
-      storage: access.mode === 'public' ? 'ephemeral' : 'sqlite',
+      storage: runtime?.storage ?? (access.mode === 'public' ? 'ephemeral' : 'sqlite'),
+      ...runtime?.health?.(),
     }),
   );
   app.get('/api/liquidity-benchmarks', async (_req, res) => {
@@ -72,10 +80,10 @@ export function createApp(service: DataService, access: AccessPolicy) {
     const days = integerParameter(req.query.days, 30, 1, 365);
     res.json({
       points: service.observations(Date.now() - days * 86400_000),
-      persistent: access.mode === 'local',
+      persistent: runtime?.storage === 'sqlite' || access.mode === 'local',
       source:
-        access.mode === 'local'
-          ? 'Local hourly observations since this app first ran; no backfilled or synthetic protocol totals.'
+        runtime?.storage === 'sqlite' || access.mode === 'local'
+          ? 'Saved hourly lending-book observations since collection started; no backfilled or synthetic protocol totals.'
           : 'Hourly local observations are not persisted on Vercel. Use /api/protocol-history for sourced historical capital data.',
     });
   });

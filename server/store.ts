@@ -1,3 +1,5 @@
+import type { HistoryPoint, MarketHistory, Snapshot } from '../shared/types.js';
+
 /** Cache contract shared by the local SQLite store and ephemeral hosted store. */
 export interface Cached<T> {
   value: T;
@@ -9,6 +11,9 @@ export interface CacheStore {
   set(key: string, value: unknown, now?: number): void;
   aggregate(timestamp: number, protocol: string, supplied: number, borrowed: number, liquidity: number): void;
   aggregates(since: number): unknown[];
+  recordSnapshot?(snapshot: Snapshot): void;
+  recordHistory?(history: MarketHistory): void;
+  marketHistory?(marketId: string, since: number): HistoryPoint[];
   close(): void;
 }
 

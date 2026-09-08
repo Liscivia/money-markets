@@ -17,3 +17,4 @@ docs
 **/*.test.ts
 tests
 scripts
+deploy

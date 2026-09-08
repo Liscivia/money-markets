@@ -489,9 +489,13 @@ main {
   position: relative;
   overflow: hidden;
 }
-.metric-card.accent {
-  background: linear-gradient(120deg, #1c292d 0, #192027 80%);
-  border-color: #304343;
+.metric-card.metric-aave {
+  background: linear-gradient(120deg, #b4a0ff14, #b4a0ff05), var(--panel);
+  border-color: #b4a0ff33;
+}
+.metric-card.metric-morpho {
+  background: linear-gradient(120deg, #69e4d314, #69e4d305), var(--panel);
+  border-color: #69e4d333;
 }
 .metric-label {
   display: flex;
@@ -515,8 +519,11 @@ main {
   margin: 12px 0 13px;
   font-variant-numeric: tabular-nums;
 }
-.metric-card.accent .metric-value {
-  color: #92e9db;
+.metric-card.metric-aave .metric-value {
+  color: #b4a0ff;
+}
+.metric-card.metric-morpho .metric-value {
+  color: #69e4d3;
 }
 .metric-detail {
   font-size: 8px;

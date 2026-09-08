@@ -127,6 +127,7 @@ export function Rates({ markets, initialMarket }: { markets: Market[]; initialMa
   const names = [marketA, marketB].map(
     (m, i) => `${i === 0 ? 'A' : 'B'} · ${m?.protocol ?? 'Market'} ${m?.asset.symbol ?? ''}`,
   );
+  const colors = [marketA, marketB].map((market) => (market ? COLORS[market.protocol] : '#8f98aa'));
   return (
     <>
       <div className="panel rate-picker">
@@ -216,13 +217,14 @@ export function Rates({ markets, initialMarket }: { markets: Market[]; initialMa
           value={pct(marketA?.[rate])}
           detail={`${marketA?.protocol ?? '—'} · ${marketA?.asset.symbol ?? ''} · ${rate === 'borrowApy' ? 'borrow' : 'supply'} APY`}
           icon={LineChartIcon}
+          protocol={marketA?.protocol}
         />
         <Metric
           label="SECOND MARKET · CURRENT"
           value={pct(marketB?.[rate])}
           detail={`${marketB?.protocol ?? '—'} · ${marketB?.asset.symbol ?? ''} · ${rate === 'borrowApy' ? 'borrow' : 'supply'} APY`}
           icon={LineChartIcon}
-          accent
+          protocol={marketB?.protocol}
         />
         <Metric
           label="AVERAGE HISTORICAL GAP"
@@ -302,7 +304,7 @@ export function Rates({ markets, initialMarket }: { markets: Market[]; initialMa
                   type="linear"
                   dataKey="A"
                   name={names[0]}
-                  stroke={COLORS.Aave}
+                  stroke={colors[0]}
                   strokeWidth={2.5}
                   dot={chart.length < 3 ? { r: 4 } : false}
                   activeDot={{ r: 4 }}
@@ -312,7 +314,8 @@ export function Rates({ markets, initialMarket }: { markets: Market[]; initialMa
                   type="linear"
                   dataKey="B"
                   name={names[1]}
-                  stroke={COLORS.Morpho}
+                  stroke={colors[1]}
+                  strokeDasharray={marketA?.protocol === marketB?.protocol ? '6 4' : undefined}
                   strokeWidth={2.5}
                   dot={chart.length < 3 ? { r: 4 } : false}
                   activeDot={{ r: 4 }}
@@ -326,7 +329,7 @@ export function Rates({ markets, initialMarket }: { markets: Market[]; initialMa
           {histories.map((h, i) => (
             <div key={i}>
               <span className="source-heading">
-                <span style={{ color: i === 0 ? COLORS.Aave : COLORS.Morpho }}>●</span> {names[i]}
+                <span style={{ color: colors[i] }}>●</span> {names[i]}
               </span>
               <p>
                 {h

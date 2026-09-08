@@ -1,0 +1,47 @@
+[Unit]
+Description=Money Markets read-only data collector
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=money-markets
+Group=money-markets
+WorkingDirectory=/opt/money-markets/current
+Environment=NODE_ENV=production
+Environment=PATH=/opt/money-markets/node-v22.23.0/bin:/usr/bin:/bin
+Environment=COLLECTOR_PORT=3102
+Environment=COLLECTOR_STATE_DIR=/var/lib/money-markets
+Environment=COLLECTOR_TOKEN_FILE=/etc/money-markets/token
+ExecStart=/opt/money-markets/node-v22.23.0/bin/node --import tsx server/collector-main.ts
+Restart=on-failure
+RestartSec=15
+TimeoutStopSec=30
+StateDirectory=money-markets
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+ReadWritePaths=/var/lib/money-markets
+InaccessiblePaths=-/opt/ipor_analytics -/opt/sentinel-hermes-agent -/etc/ssh
+MemoryHigh=384M
+MemoryMax=640M
+CPUQuota=50%
+TasksMax=64
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

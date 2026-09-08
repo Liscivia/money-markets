@@ -65,6 +65,7 @@ export function createDataService(
         const fresh = withFallback(await upstream.fetchSnapshot(), cached?.value ?? null);
         if (!fresh.markets.length) throw new Error('Market sources returned no data');
         cache.set(SNAPSHOT_KEY, fresh, now());
+        cache.recordSnapshot?.(fresh);
         const timestamp = Math.floor(now() / 3_600_000) * 3_600_000;
         for (const provider of fresh.providers.filter((p) => p.status === 'live')) {
           const rows = fresh.markets.filter((m) => m.protocol === provider.protocol);
@@ -98,6 +99,7 @@ export function createDataService(
     const pending = upstream
       .fetchHistory(market, days)
       .then((data) => {
+        cache.recordHistory?.(data);
         // Empty results are real data too; briefly cache them to avoid retry storms.
         cache.set(key, data, now() - (data.points.length ? 0 : HISTORY_TTL - MANUAL_REFRESH_FLOOR));
         return data;
@@ -107,6 +109,15 @@ export function createDataService(
           return {
             ...cached.value,
             warning: `Cached history from ${cached.value.fetchedAt}; refresh unavailable.`,
+          };
+        const archived = cache.marketHistory?.(market.id, now() / 1000 - days * 86400) ?? [];
+        if (archived.length)
+          return {
+            marketId: market.id,
+            points: archived,
+            source: 'Archived official source observations · last observation per UTC day',
+            fetchedAt: new Date(archived.at(-1)!.timestamp * 1000).toISOString(),
+            warning: 'Upstream history unavailable. Showing archived observations only; gaps are not filled.',
           };
         throw error;
       })

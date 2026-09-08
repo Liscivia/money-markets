@@ -1,0 +1,19 @@
+{
+    admin localhost:2019
+}
+
+{$MONEY_MARKETS_HOST} {
+    encode gzip
+    header {
+        -Server
+        X-Content-Type-Options nosniff
+        Cache-Control no-store
+    }
+    @api path /api/*
+    handle @api {
+        reverse_proxy 127.0.0.1:3102
+    }
+    handle {
+        respond "Not found" 404
+    }
+}

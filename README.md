@@ -84,7 +84,9 @@ scripts/         Live-data checks
 docs/            Methodology, architecture and deployment
 ```
 
-The same Express API runs locally and on Vercel. Locally, SQLite preserves caches and hourly observations under `.data/`. Vercel uses a bounded temporary cache; it does not upload or persist your local database. Historical charts still read actual upstream history. See [hosting details](docs/deployment.md).
+The live website runs on **Vercel**, backed by a small **Hostinger collector**. It refreshes market data every **10 minutes**, governance hourly, and protocol capital/history daily. SQLite retains real daily rate observations; daily backups keep the latest 14 copies. The rate cards and chart lines use **purple for Aave** and **green for Morpho**, independent of which rate is higher.
+
+Vercel reads the collector over authenticated HTTPS; no collector credential reaches the browser. Locally, the same API works directly with public providers and saves to `.data/`. Forks can also run on Vercel without a collector, using temporary caching. See [hosting details](docs/deployment.md).
 
 ## Development
 

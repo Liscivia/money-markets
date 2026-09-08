@@ -7,6 +7,8 @@ import {
   type ProtocolCapitalSnapshot,
 } from '../shared/protocol-capital.js';
 import type { CompetitionHistory } from '../shared/competition.js';
+import type { CacheStore } from './store.js';
+import { HttpError } from './errors.js';
 export type { CompetitionHistory } from '../shared/competition.js';
 export type TvlPoint = { date: number; totalLiquidityUSD: number };
 export type RawProtocol = { name: string; tvl: TvlPoint[]; chainTvls: Record<string, { tvl?: TvlPoint[] }> };
@@ -28,8 +30,30 @@ const slugs = ['aave-v3', 'aave-v4', 'morpho-blue'] as const;
 type RawResult = { at: number; rows: (RawProtocol | null)[]; warnings: string[] };
 let cachedRaw: RawResult | null = null;
 let flight: Promise<RawResult> | null = null;
-async function rawData(): Promise<RawResult> {
-  if (cachedRaw && Date.now() - cachedRaw.at < 3600_000) return cachedRaw;
+const RAW_KEY = 'defillama:raw-capital-v2';
+let scheduledStore: CacheStore | null = null;
+/** Collector only: cards and every chain's history share one durable source generation. */
+export function useScheduledCompetition(store: CacheStore) {
+  scheduledStore = store;
+  cachedRaw = store.get<RawResult>(RAW_KEY)?.value ?? null;
+}
+export async function refreshScheduledCompetition() {
+  return rawData(true);
+}
+async function rawData(force = false): Promise<RawResult> {
+  if (scheduledStore && !force) {
+    if (!cachedRaw) throw new HttpError(503, 'Protocol capital is awaiting its first scheduled collection.');
+    return Date.now() - cachedRaw.at <= 36 * 3600_000
+      ? cachedRaw
+      : {
+          ...cachedRaw,
+          warnings: [
+            ...cachedRaw.warnings,
+            `Scheduled capital refresh overdue; cached ${new Date(cachedRaw.at).toISOString()}.`,
+          ],
+        };
+  }
+  if (!force && cachedRaw && Date.now() - cachedRaw.at < 3600_000) return cachedRaw;
   if (flight) return flight;
   flight = (async () => {
     const results = await Promise.allSettled(
@@ -47,8 +71,20 @@ async function rawData(): Promise<RawResult> {
       r.status === 'rejected' ? [`${slugs[i]}: source unavailable`] : [],
     );
     const rows = results.map((r) => (r.status === 'fulfilled' ? r.value : null));
+    if (scheduledStore && warnings.length && cachedRaw) {
+      cachedRaw = {
+        ...cachedRaw,
+        warnings: [
+          ...warnings,
+          `Retaining the complete capital snapshot from ${new Date(cachedRaw.at).toISOString()}.`,
+        ],
+      };
+      scheduledStore.set(RAW_KEY, cachedRaw, cachedRaw.at);
+      throw new Error('Incomplete capital refresh; previous source generation retained');
+    }
     if (!rows.some(Boolean)) throw new Error('Protocol history source unavailable');
     cachedRaw = { at: Date.now(), rows, warnings };
+    scheduledStore?.set(RAW_KEY, cachedRaw, cachedRaw.at);
     return cachedRaw;
   })().finally(() => {
     flight = null;

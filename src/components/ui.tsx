@@ -1,6 +1,6 @@
 import { CircleHelp, ExternalLink, LoaderCircle, Search, Wallet } from 'lucide-react';
 import { marketUrl } from '../../shared/market-links';
-import type { Market } from '../../shared/types';
+import type { Market, Protocol } from '../../shared/types';
 
 import { pct, usd } from '../lib/format';
 
@@ -48,16 +48,16 @@ export function Metric({
   value,
   detail,
   icon: Icon,
-  accent,
+  protocol,
 }: {
   label: string;
   value: string;
   detail: React.ReactNode;
   icon: typeof Wallet;
-  accent?: boolean;
+  protocol?: Protocol;
 }) {
   return (
-    <div className={`metric-card ${accent ? 'accent' : ''}`}>
+    <div className={`metric-card${protocol ? ` metric-${protocol.toLowerCase()}` : ''}`}>
       <div className="metric-label">
         {label}
         <Icon size={17} />
